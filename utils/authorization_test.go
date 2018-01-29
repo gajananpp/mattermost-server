@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -26,19 +28,19 @@ func mockConfig() *model.Config {
 	return &config
 }
 
-func mapping() map[string]map[string][]RoleState {
+func mapping() (map[string]map[string][]RoleState, error) {
 
 	policiesRolesMapping := make(map[string]map[string][]RoleState)
 
 	raw, err := ioutil.ReadFile("./policies-roles-mapping.json")
 	if err != nil {
-		panic(err)
+		return policiesRolesMapping, err
 	}
 
 	var f map[string]interface{}
 	err = json.Unmarshal(raw, &f)
 	if err != nil {
-		panic(err)
+		return policiesRolesMapping, err
 	}
 
 	for policyName, value := range f {
@@ -65,12 +67,15 @@ func mapping() map[string]map[string][]RoleState {
 
 	}
 
-	return policiesRolesMapping
+	return policiesRolesMapping, nil
 }
 
 func TestSetRolePermissionsFromConfig(t *testing.T) {
 
-	mapping := mapping()
+	mapping, err := mapping()
+	if err != nil {
+		require.NoError(t, err)
+	}
 
 	for policyName, v := range mapping {
 		for policyValue, rolesMappings := range v {
